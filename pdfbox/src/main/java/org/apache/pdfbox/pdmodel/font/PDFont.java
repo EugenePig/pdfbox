@@ -97,7 +97,7 @@ public abstract class PDFont implements COSObjectable
     protected CMap toUnicodeCmap = null;
     
     private boolean hasToUnicode = false;
-    
+
     private boolean widthsAreMissing = false;
 
     protected static Map<String, CMap> cmapObjects =
@@ -905,12 +905,12 @@ public abstract class PDFont implements COSObjectable
             // maybe the font doesn't provide any widths
             if (!widthsAreMissing)
             {
-                getWidths();
-                if (widths != null)
-                {
-                    width = widths.get(charCode-firstChar).floatValue();
-                }
+            getWidths();
+            if (widths != null)
+            {
+                width = widths.get(charCode-firstChar).floatValue();
             }
+        }
         }
         else
         {
@@ -964,4 +964,9 @@ public abstract class PDFont implements COSObjectable
     {
     }
 
+    // Eugene Su
+    public CMap getCMap()
+    {
+        return 	cmap;        	
+    }
 }

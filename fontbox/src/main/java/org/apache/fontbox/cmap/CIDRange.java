@@ -16,13 +16,18 @@
  */
 package org.apache.fontbox.cmap;
 
+import java.io.Serializable; // Eugene Su
+
 
 /**
  * Range of continuous CIDs between two Unicode characters.
  */
-class CIDRange {
+class CIDRange implements Serializable 
+{
 
-    private char from;
+	private static final long serialVersionUID = 1L; // Eugene Su
+
+	private char from;
 
     private char to;
 

@@ -79,6 +79,43 @@ public class GlyphTable extends TTFTable
         }
         initialized = true;
     }
+    
+    // Eugene Su
+    // fix bugs which get wrong glyphs
+    /*public void initData( TrueTypeFont ttf, TTFDataStream data ) throws IOException
+    {
+        MaximumProfileTable maxp = ttf.getMaximumProfile();
+        IndexToLocationTable loc = ttf.getIndexToLocation();
+        // the glyph offsets
+        long[] offsets = loc.getOffsets();
+        // number of glyphs
+        int numGlyphs = maxp.getNumGlyphs();
+        long offset = getOffset();
+        glyphs = new GlyphData[numGlyphs];
+        for( int i=0; i<numGlyphs; i++ )
+        {
+            long start = offsets[i];
+            long end = offsets[i+1];
+            
+            if(start == end || start > end)
+            {
+            	continue;
+            }
+
+            glyphs[i] = new GlyphData();
+            data.seek(offset + offsets[i]);
+            glyphs[i].initData(ttf, data);
+        }
+        for (int i = 0; i < numGlyphs; i++)
+        {
+            GlyphData glyph = glyphs[i];
+            // resolve composite glyphs
+            if (glyph != null && glyph.getDescription().isComposite())
+            {
+                glyph.getDescription().resolve();
+            }
+        }
+    }*/
 
     /**
      * @return Returns the glyphs.

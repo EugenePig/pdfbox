@@ -77,4 +77,11 @@ public class HorizontalMetricsTable extends TTFTable
     {
         advanceWidth = advanceWidthValue;
     }
+    /**
+     * @return the leftSideBearing
+     */
+    public short[] getLeftSideBearing() // Eugene Su
+    { 
+        return leftSideBearing;
+    }
 }

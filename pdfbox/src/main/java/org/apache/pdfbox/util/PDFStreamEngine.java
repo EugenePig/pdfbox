@@ -52,6 +52,10 @@ import org.apache.pdfbox.pdmodel.graphics.xobject.PDXObject;
 
 import org.apache.pdfbox.util.operator.OperatorProcessor;
 
+// Eugene Su
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * This class will run through a PDF content stream and execute certain operations
  * and provide a callback interface for clients that want to do things with the stream.
@@ -67,6 +71,8 @@ public class PDFStreamEngine
      * Log instance.
      */
     private static final Log LOG = LogFactory.getLog(PDFStreamEngine.class);
+    Logger logger = LoggerFactory.getLogger("PDFStreamEngine.class"); // Eugene Su
+    static boolean isEnableLogger = false; // Eugene Su
 
     /**
      * The PDF operators that are ignored by this engine.
@@ -450,8 +456,29 @@ public class PDFStreamEngine
             
             // TODO : tx should be set for horizontal text and ty for vertical text
             // which seems to be specified in the font (not the direction in the matrix).
-            float tx = ((characterHorizontalDisplacementText)*fontSizeText)*horizontalScalingText;
-            float ty = 0;
+            // Eugene Su
+            float tx;
+            float ty;
+            int wmode = 0;
+            if(font.getCMap() != null && font.getCMap().getWMode() == 1)
+            {
+            	wmode = 1;
+            }
+            if(/*Character.UnicodeBlock.of(c.toString().codePointAt(0)) == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS
+            	&&*/ wmode == 1 	
+            		)
+            {
+                ty = 0 - ((characterHorizontalDisplacementText)*fontSizeText)*horizontalScalingText;
+                tx = 0;
+            }
+            else
+            {
+                tx = ((characterHorizontalDisplacementText)*fontSizeText)*horizontalScalingText;
+                ty = 0;
+            }
+            // float tx = ((characterHorizontalDisplacementText)*fontSizeText)*horizontalScalingText;
+            // float ty = 0;
+
             // reset the matrix instead of creating a new one
             td.reset();
             td.setValue( 2, 0, tx );
@@ -468,15 +495,40 @@ public class PDFStreamEngine
             final float endYPosition = textMatrixEnd.getYPosition();
 
             // add some spacing to the text matrix (see comment above)
-            tx = ((characterHorizontalDisplacementText)*fontSizeText+characterSpacingText+spacingText)
+            // Eugene Su
+            if(wmode == 1)
+            {
+                ty = 0 - ((characterHorizontalDisplacementText)*fontSizeText-characterSpacingText-spacingText)
+                        *horizontalScalingText;
+                td.setValue( 2, 1, ty );
+            }
+            else
+            {
+                tx = ((characterHorizontalDisplacementText)*fontSizeText+characterSpacingText+spacingText)
                     *horizontalScalingText;
-            td.setValue( 2, 0, tx );
-            td.multiply(textMatrix, textMatrix );
+                td.setValue( 2, 0, tx );
+            }
+            // tx = ((characterHorizontalDisplacementText)*fontSizeText+characterSpacingText+spacingText)
+            //         *horizontalScalingText;
+
+            textMatrix = td.multiply(textMatrix, textMatrix );
             
             // determine the width of this character
             // XXX: Note that if we handled vertical text, we should be using Y here
-            float startXPosition = textMatrixStart.getXPosition();
-            float widthText = endXPosition - startXPosition;
+            // Eugene Su  
+            float widthText;
+            if(wmode == 1)
+            {
+            	float startYPosition = textMatrixStart.getYPosition();
+                widthText = startYPosition - endYPosition;
+            }
+            else
+            {
+                float startXPosition = textMatrixStart.getXPosition();
+                widthText = endXPosition - startXPosition;
+            }
+            // float startXPosition = textMatrixStart.getXPosition();
+            // float widthText = endXPosition - startXPosition;
 
             //there are several cases where one character code will
             //output multiple characters.  For example "fi" or a
@@ -495,6 +547,41 @@ public class PDFStreamEngine
 
             float totalVerticalDisplacementDisp = maxVerticalDisplacementText * fontSizeText * textXctm.getYScale();
 
+            // Eugene Su
+            if(isEnableLogger && logger.isInfoEnabled())
+            {
+                if(c != null && !c.isEmpty())
+                {
+                	if(c.length() == 1)
+                	{
+                		logger.info("Content: ( " + c + " ) ( " + Integer.toString(c.codePointAt(0), 16) + " ) ( " +  textMatrixStart.getXPosition() + " , " + textMatrixStart.getYPosition() + " ) ( " +  endXPosition + " , " + endYPosition + " )\r\n");
+                	}
+                	else
+                	{
+                		logger.info("Contents: ( " + c + " ) ( " + textMatrixStart.getXPosition() + " , " + textMatrixStart.getYPosition() + " ) ( " +  endXPosition + " , " + endYPosition + " )\r\n");
+                		for(int num = 0; num < c.length(); num++)
+                		{
+                			logger.info("content " + (num + 1) + ": " + Integer.toString(c.codePointAt(num), 16) + "\r\n");
+                		}
+                	}
+                }
+            	
+                /*if(codePoints != null)
+                {
+                    if(codePoints.length == 1)
+                    {
+                    	logger.info("code: " + Integer.toString(codePoints[0], 16) + "\r\n");		
+                    }
+                    else
+                    {
+                        for(int num = 0; num < codePoints.length; num++)
+                        {
+                        	logger.info((num + 1) + ": " + Integer.toString(codePoints[num], 16) + "\r\n");	
+                        }
+                    }
+                }*/
+            }
+                                    
             // process the decoded text
             processTextPosition(
                     new TextPosition(
@@ -511,7 +598,7 @@ public class PDFStreamEngine
                             codePoints,
                             font,
                             fontSizeText,
-                            (int)(fontSizeText * textMatrix.getXScale())
+                            (fontSizeText * textMatrix.getXScale()) // Eugene Su // (int)(fontSizeText * textMatrix.getXScale())
                             ));
         }
     }
@@ -721,4 +808,8 @@ public class PDFStreamEngine
         return totalCharCnt;
     }
     
+    static public void enableLogger() // Eugene Su
+    {
+      isEnableLogger = true;
+    }
 }
