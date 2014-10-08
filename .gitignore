@@ -1,0 +1,10 @@
+*.bak
+*.class
+*.jar
+.settings
+bin
+target
+.classpath
+.project
+org.eclipse.*
+

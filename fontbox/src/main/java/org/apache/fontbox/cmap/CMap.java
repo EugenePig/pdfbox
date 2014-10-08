@@ -17,6 +17,8 @@
 package org.apache.fontbox.cmap;
 
 import java.io.IOException;
+import java.io.Serializable; // Eugene Su
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -32,9 +34,9 @@ import org.apache.commons.logging.LogFactory;
  *
  * @author Ben Litchfield (ben@benlitchfield.com)
  */
-public class CMap
+public class CMap implements Serializable
 {
- 
+    private static final long serialVersionUID = 1L; // Eugene Su
     private static final Log LOG = LogFactory.getLog(CMap.class);
     
     private int wmode = 0;
@@ -487,5 +489,47 @@ public class CMap
     public int getSpaceMapping()
     {
         return spaceMapping;
+    }
+    
+    // Eugene Su
+    public int lookupCharCode(String charater)
+    {
+    	if(doubleByteMappings.containsValue(charater))
+    	{
+    		for (Map.Entry<Integer,String> entry : doubleByteMappings.entrySet()) 
+    		{
+    			if(entry.getValue().equals(charater))
+    			{
+    				return entry.getKey();
+    			}
+    		}
+    	}
+    	else if(char2CIDMappings.containsKey(charater))
+    	{
+    		return char2CIDMappings.get(charater);
+    	}
+    	else if(singleByteMappings.containsValue(charater))
+    	{
+    		for (Map.Entry<Integer,String> entry : singleByteMappings.entrySet()) 
+    		{
+    			if(entry.getValue().equals(charater))
+    			{
+    				return entry.getKey();
+    			}
+    		}
+    	}
+    	else
+    	{
+     		for (CIDRange range : cidRanges) 
+            {
+                int code = range.map(charater.charAt(0));
+                if (code != -1) 
+                {
+                    return code;
+                }
+            }
+    	}
+    	
+    	return -1;
     }
 }

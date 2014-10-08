@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-/* $Id$ */
+/* $Id: CCITTFaxConstants.java 1156213 2011-08-10 15:06:20Z jeremias $ */
 
 package org.apache.pdfbox.io.ccitt;
 

@@ -19,6 +19,9 @@ package org.apache.pdfbox.util;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 
+//Eugene Su
+import java.awt.Color;
+
 /**
  * This represents a string and a position on the screen of those characters.
  *
@@ -47,9 +50,11 @@ public class TextPosition
     private int[] unicodeCP;
     private PDFont font;
     private float fontSize;
-    private int fontSizePt;
+    private float fontSizePt; // Eugene Su // private int fontSizePt;
     // TODO remove unused value
     private float wordSpacing;  // word spacing value, in display units
+    private Color textColor = new Color(255, 255, 255); // Eugene Su
+    private int textRenderingMode = 0; // Eugene Su
 
     /**
      *  Constructor.
@@ -227,7 +232,7 @@ public class TextPosition
             int[] codePoints,
             PDFont currentFont,
             float fontSizeValue,
-            int fontSizeInPt
+            float fontSizeInPt // Eugene Su
     )
     {
         this.textPos = textPositionSt;
@@ -465,6 +470,15 @@ public class TextPosition
      */
     private float getWidthRot(float rotation)
     {
+        // Eugene Su
+    	int wmode = 0;
+        if(font.getCMap() != null && font.getCMap().getWMode() == 1)
+        {
+       	    wmode = 1;
+        }
+    	
+        if(wmode == 0)
+        {
         if ((rotation == 90) || (rotation == 270))
         {
             return Math.abs(endY - textPos.getYPosition());
@@ -472,6 +486,22 @@ public class TextPosition
         else
         {
             return Math.abs(endX - textPos.getXPosition());
+        }
+    }
+        else
+        {
+       	    float width;
+        	
+            if ((rotation == 90) || (rotation == 270))
+            {
+       	        width =  Math.abs(endX - textPos.getXPosition());
+            }
+            else
+            {
+                width = Math.abs(endY - textPos.getYPosition());
+            }
+        	
+       	    return width;
         }
     }
 
@@ -492,7 +522,10 @@ public class TextPosition
      */
     public float getWidthDirAdj()
     {
-        return getWidthRot(getDir());
+        // Eugene Su
+    	float rotation;
+    	rotation = (rot == getDir()) ? rot : ((rot + getDir()) % 360); 
+    	return getWidthRot(rotation);
     }
 
     /**
@@ -810,5 +843,114 @@ public class TextPosition
         return (type == Character.NON_SPACING_MARK 
                 || type == Character.MODIFIER_SYMBOL 
                 || type == Character.MODIFIER_LETTER); 
+    }
+        
+    // Eugene Su
+    /**
+     * Set the text color
+     *
+     * @param color The color of the current character 
+     */
+    public void setTextColor(Color color)
+    {
+        textColor = color;
+    }
+    
+    // Eugene Su
+    /**
+     * @return Returns the color of the current character.
+     */
+    public Color getTextColor()
+    {
+        if(textColor == null)
+        {
+            textColor = new Color(255, 255, 255);
+        }
+        
+        return textColor;
+    }
+    
+    // Eugene Su
+    /**
+     * @return True if the current character is in italics.
+     */
+    public boolean isItalics()
+    {
+        if(getShearYRot() == 0.0 && getShearXRot() == 0.0)
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+    
+    // Eugene Su
+    /**
+     * Set the text rendering mode
+     *
+     * @param renderingMode The text rendering mode of the current character 
+     */
+    public void setTextRenderingMode(int renderingMode)
+    {
+        textRenderingMode= renderingMode;
+    }
+    
+    // Eugene Su
+    /**
+     * @return Returns the text rendering mode of the current character.
+     */
+    public int getTextRenderingMode()
+    {
+        return textRenderingMode;
+    }
+    
+    // Eugene Su
+    public float getShearYRot()
+    {
+        float dir = getDir();
+        
+        if ((dir == 0) || (dir == 180))
+        {
+            return textPos.getValue(0, 1);
+        }
+        else
+        {
+            return textPos.getValue(0, 0);
+        }
+    }
+    
+    // Eugene Su
+    public float getShearXRot()
+    {
+        float dir = getDir();
+        
+        if ((dir == 0) || (dir == 180))
+        {
+            return textPos.getValue(1, 0);
+        }
+        else
+        {
+            return textPos.getValue(1, 1);
+        }
+    }
+    
+    // Eugene Su    
+    public int getRot()
+    {
+        return rot;
+    }
+    
+    // Eugene Su
+    public float getPageHeight()
+    {
+        return pageHeight;
+    }
+
+    // Eugene Su
+    public float getPageWidth()
+    {
+        return pageWidth;
     }
 }

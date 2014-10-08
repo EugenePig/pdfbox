@@ -252,6 +252,26 @@ public class TrueTypeFont
     }
     
     /**
+     * Get the vhea table for this TTF.
+     * 
+     * @return The vhea table.
+     */
+    public VerticalHeaderTable getVerticalHeader() // Eugene Su
+    {
+        return (VerticalHeaderTable)tables.get( VerticalHeaderTable.TAG );
+    }
+    
+    /**
+     * Get the vmtx table for this TTF.
+     * 
+     * @return The vmtx table.
+     */
+    public VerticalMetricsTable getVerticalMetrics() // Eugene Su
+    {
+        return (VerticalMetricsTable)tables.get( VerticalMetricsTable.TAG );
+    }
+    
+    /**
      * This permit to get the data of the True Type Font
      * program representing the stream used to build this 
      * object (normally from the TTFParser object).

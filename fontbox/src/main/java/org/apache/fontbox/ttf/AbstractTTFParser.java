@@ -227,6 +227,7 @@ abstract class AbstractTTFParser {
         retval.setCheckSum( raf.readUnsignedInt() );
         retval.setOffset( raf.readUnsignedInt() );
         retval.setLength( raf.readUnsignedInt() );
+        // System.out.println("Table: " + tag + "   " + retval.getOffset() + "   " + retval.getLength()); // Eugene Su // TODO: print to log
         return retval;
     }
 }
