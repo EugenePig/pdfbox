@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-/* $Id$ */
+/* $Id: CCITTFaxG31DDecodeInputStream.java 1581946 2014-03-26 17:13:01Z tilman $ */
 
 package org.apache.pdfbox.io.ccitt;
 

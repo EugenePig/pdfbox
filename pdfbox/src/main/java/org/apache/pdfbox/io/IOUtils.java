@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-/* $Id$ */
+/* $Id: IOUtils.java 1328603 2012-04-21 07:44:35Z gbailleul $ */
 
 package org.apache.pdfbox.io;
 
