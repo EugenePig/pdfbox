@@ -57,6 +57,11 @@
       <version>3.8</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-jdk14</artifactId>
+      <version>1.7.6</version>
+    </dependency>    
   </dependencies>
 
   <build>
@@ -67,9 +72,9 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Export-Package>org.apache.pdfbox.*</Export-Package>
+            <Export-Package>org.apache.pdfbox.*;org.slf4j.*</Export-Package>
             <Embed-Transitive>true</Embed-Transitive>
-            <Embed-Dependency>*;scope=provided;inline=org/apache/**|org/bouncycastle/**|com/ibm/icu/**</Embed-Dependency>
+            <Embed-Dependency>*;scope=provided;inline=org/apache/**|org/bouncycastle/**|com/ibm/icu/**|org/slf4j/**</Embed-Dependency>
             <Bundle-DocURL>${project.url}</Bundle-DocURL>
             <Import-Package>!junit.framework,!junit.textui,javax.*;resolution:=optional,org.apache.avalon.framework.logger;resolution:=optional,org.apache.log;resolution:=optional,org.apache.log4j;resolution:=optional,*</Import-Package>
             <Main-Class>org.apache.pdfbox.PDFBox</Main-Class>

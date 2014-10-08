@@ -34,6 +34,7 @@ import java.util.TreeSet;
 import java.util.Vector;
 import java.util.regex.Pattern;
 
+import org.apache.fontbox.cmap.CMap; // Eugene Su
 import org.apache.pdfbox.cos.COSDocument;
 import org.apache.pdfbox.cos.COSStream;
 import org.apache.pdfbox.exceptions.CryptographyException;
@@ -46,6 +47,17 @@ import org.apache.pdfbox.pdmodel.common.PDStream;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
 import org.apache.pdfbox.pdmodel.interactive.pagenavigation.PDThreadBead;
 
+
+
+// Eugene Su
+import java.awt.Color; 
+import java.awt.Composite;
+import java.awt.Paint;
+
+import org.apache.pdfbox.pdmodel.graphics.PDGraphicsState;
+import org.apache.pdfbox.pdmodel.text.PDTextState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class will take a pdf document and strip out all of the text and ignore the
@@ -64,6 +76,7 @@ public class PDFTextStripper extends PDFStreamEngine
 {
 
     private static final String thisClassName = PDFTextStripper.class.getSimpleName().toLowerCase();
+    Logger logger = LoggerFactory.getLogger("PDFTextStripper.class"); // Eugene Su
 
     private static float DEFAULT_INDENT_THRESHOLD = 2.0f;
     private static float DEFAULT_DROP_THRESHOLD = 2.5f;
@@ -77,7 +90,7 @@ public class PDFTextStripper extends PDFStreamEngine
         String sdrop = null, sindent = null;
         try
         {
-            String prop = thisClassName + ".indent";
+        String prop = thisClassName+".indent";
             sindent = System.getProperty(prop);
             prop = thisClassName + ".drop";
             sdrop = System.getProperty(prop);
@@ -94,9 +107,9 @@ public class PDFTextStripper extends PDFStreamEngine
                 float f = Float.parseFloat(sindent);
                 DEFAULT_INDENT_THRESHOLD = f;
             }
-            catch (NumberFormatException nfe)
+            catch(NumberFormatException nfe)
             {
-                //ignore and use default
+                        //ignore and use default
             }
         }
         if (sdrop != null && sdrop.length() > 0)
@@ -106,7 +119,7 @@ public class PDFTextStripper extends PDFStreamEngine
                 float f = Float.parseFloat(sdrop);
                 DEFAULT_DROP_THRESHOLD = f;
             }
-            catch (NumberFormatException nfe)
+            catch(NumberFormatException nfe)
             {
                 //ignore and use default
             }
@@ -138,6 +151,7 @@ public class PDFTextStripper extends PDFStreamEngine
     private boolean suppressDuplicateOverlappingText = true;
     private boolean shouldSeparateByBeads = true;
     private boolean sortByPosition = false;
+    private boolean sortByPositionV2 = false; // Eugene Su
     private boolean addMoreFormatting = false;
     
     private float indentThreshold = DEFAULT_INDENT_THRESHOLD;
@@ -239,6 +253,22 @@ public class PDFTextStripper extends PDFStreamEngine
     {
         super( ResourceLoader.loadProperties(
                 "org/apache/pdfbox/resources/PDFTextStripper.properties", true ));
+        this.outputEncoding = encoding;
+        normalize = new TextNormalize(this.outputEncoding);
+    }
+
+    // Eugene Su
+    /**
+     * Instantiate a new PDFTextStripper object. This object will load
+     * properties from PDFTextStripper.properties and will apply
+     * encoding-specific conversions to the output text.
+     *
+     * @param encoding The encoding that the output will be written in.
+     * @throws IOException If there is an error reading the properties.
+     */
+    public PDFTextStripper( Properties props ,String encoding ) throws IOException
+    {
+    	super( props );
         this.outputEncoding = encoding;
         normalize = new TextNormalize(this.outputEncoding);
     }
@@ -383,10 +413,16 @@ public class PDFTextStripper extends PDFStreamEngine
             {
                 COSStream contents = contentStream.getStream();
                 processPage( nextPage, contents );
+                
+                // Eugene Su
+                if(isEnableLogger && logger.isInfoEnabled())
+                {
+                	logger.info("=== End of Page " + currentPageNo + " ===\r\n");
+                }
             }
         }
     }
-
+   
     private int getPageNumber( PDOutlineItem bookmark, List<COSObjectable> allPages ) throws IOException
     {
         int pageNumber = -1;
@@ -458,11 +494,166 @@ public class PDFTextStripper extends PDFStreamEngine
             }
             characterListMapping.clear();
             processStream( page, page.findResources(), content );
+            
+            // Eugene Su
+            positionListMapping.put(new Integer(currentPageNo), new Vector<List<TextPosition>>(charactersByArticle));
+            
             writePage();
             endPage( page );
         }
     }
+    
+    /**
+     * Eugene Su
+     */
+    private Map<Integer, Vector<List<TextPosition>>> positionListMapping = new HashMap<Integer, Vector<List<TextPosition>>>();
+    
+    /**
+     * Eugene Su
+     * 
+     *  @return The Hash Map of TextPosition of every extracted character 
+     */
+    public Map<Integer, Vector<List<TextPosition>>> getPositionListMapping()
+    {
+        return positionListMapping;
+    }
+    
+    /**
+     * Eugene Su
+     */
+    private int getWMode(TextPosition text)
+    {
+      int wmode = 0;
+      CMap cmap = text.getFont().getCMap();
 
+      if (cmap != null && cmap.getWMode() == 1)
+      {
+        wmode = 1;
+      }
+      
+      return wmode;
+    }
+    
+    private boolean isVerticalWriting(TextPosition text)
+    {
+      boolean isVerticalWriting = false;
+      int wmode = getWMode(text);
+      float dir = text.getDir();
+      int rotation = text.getRot();
+      
+      if (rotation == 0 || rotation == 180)
+      {
+        if (wmode == 0)
+        {
+          if (dir == 0 || dir == 180)
+          {
+            isVerticalWriting = false;
+          }
+          else if (dir == 270 || dir == 90)
+          {
+            isVerticalWriting = true;
+          }
+        }
+        else
+        {
+          if (dir == 0 || dir == 180)
+          {
+            isVerticalWriting = true;
+          }
+        }
+      }
+      else
+      {
+        if (wmode == 0)
+        {
+          if (dir == 90 || dir == 270)
+          {
+            isVerticalWriting = false;
+          }
+          else if (dir == 0 || dir == 180)
+          {
+            isVerticalWriting = true;
+          }
+        }
+        else
+        {
+          if (dir == 90 || dir == 270)
+          {
+            isVerticalWriting = true;
+          }
+        }
+      }
+      
+      return isVerticalWriting;
+    }
+    
+    private boolean isVerticalWriting(Vector<List<TextPosition>> charactersByArticle)
+    {
+      boolean isVerticalWriting = false;
+      int vCount = 0;
+      int hCount = 0;
+
+      if (charactersByArticle.size() != 0)
+      {
+        for (int i = 0; i < charactersByArticle.size(); i++)
+        {
+          List<TextPosition> textList = charactersByArticle.get(i);
+          for (int j = 0; j < textList.size(); j++)
+          {
+            if(!isVerticalWriting(textList.get(j)))
+            {
+              hCount++;
+            }
+            else
+            {
+              vCount++;
+            }
+          }
+        }
+
+        if (vCount > hCount)
+        {
+          isVerticalWriting = true;
+        }
+      }
+
+      return isVerticalWriting;
+    }
+    
+    /**
+     * Eugene Su
+     */
+    private void sortCharacters(Vector<List<TextPosition>> charactersByArticle)
+    {
+      if (charactersByArticle.size() != 0)
+      {
+        boolean isVerticalWriting = isVerticalWriting(charactersByArticle);
+
+        for (int i = 0; i < charactersByArticle.size(); i++)
+        {
+          List<TextPosition> textList = charactersByArticle.get(i);
+
+          if (!isVerticalWriting)
+          {
+            Collections.sort(textList, new TextPositionComparatorH());
+          }
+          else
+          {
+            Collections.sort(textList, new TextPositionComparatorV());
+          }
+        }
+
+        if (!isVerticalWriting)
+        {
+          Collections.sort(charactersByArticle, new CharactersByArticleComparatorH());
+        }
+        else
+        {
+          Collections.sort(charactersByArticle, new CharactersByArticleComparatorV());
+        }
+      }
+    }
+    
     /**
      * Start a new article, which is typically defined as a column
      * on a single page (also referred to as a bead).  This assumes
@@ -559,7 +750,13 @@ public class PDFTextStripper extends PDFStreamEngine
         { 
             writePageStart();
         }
-
+        
+        // Eugene Su
+        if( getSortByPositionV2() )
+        {
+          sortCharacters(charactersByArticle);
+        }
+        
         for( int i = 0; i < charactersByArticle.size(); i++)
         {
             List<TextPosition> textList = charactersByArticle.get( i );
@@ -898,6 +1095,57 @@ public class PDFTextStripper extends PDFStreamEngine
      */
     protected void processTextPosition( TextPosition text )
     {
+        // Eugene Su
+        text.setTextRenderingMode(getGraphicsState().getTextState().getRenderingMode());
+        try // Eugene Su
+        {
+            PDGraphicsState graphicsState = getGraphicsState();
+            Composite composite;
+            Paint paint;
+            int pageHeight = 0;
+            switch(graphicsState.getTextState().getRenderingMode()) 
+            {
+                case PDTextState.RENDERING_MODE_FILL_TEXT:
+                    composite = graphicsState.getNonStrokeJavaComposite();
+                    paint = graphicsState.getNonStrokingColor().getJavaColor();
+                    if (paint == null)
+                    {
+                        paint = graphicsState.getNonStrokingColor().getPaint(pageHeight);
+                    }
+                    break;
+                case PDTextState.RENDERING_MODE_STROKE_TEXT:
+                    composite = graphicsState.getStrokeJavaComposite();
+                    paint = graphicsState.getStrokingColor().getJavaColor();
+                    if (paint == null)
+                    {
+                        paint = graphicsState.getStrokingColor().getPaint(pageHeight);
+                    }
+                    break;
+                case PDTextState.RENDERING_MODE_NEITHER_FILL_NOR_STROKE_TEXT:
+                    //basic support for text rendering mode "invisible"
+                    Color nsc = graphicsState.getStrokingColor().getJavaColor();
+                    float[] components = {Color.black.getRed(),Color.black.getGreen(),Color.black.getBlue()};
+                    paint = new Color(nsc.getColorSpace(),components,0f);
+                    composite = graphicsState.getStrokeJavaComposite();
+                    break;
+                default:
+                    // TODO : need to implement....
+                    // LOG.debug("Unsupported RenderingMode "
+                    //        + this.getGraphicsState().getTextState().getRenderingMode()
+                    //        + " in PageDrawer.processTextPosition()."
+                    //        + " Using RenderingMode "
+                    //        + PDTextState.RENDERING_MODE_FILL_TEXT
+                    //        + " instead");
+                    composite = graphicsState.getNonStrokeJavaComposite();
+                    paint = graphicsState.getNonStrokingColor().getJavaColor();
+            }
+            text.setTextColor((Color)paint);
+        }
+        catch( IOException io )
+        {
+            io.printStackTrace();
+        }
+    	
         boolean showCharacter = true;
         if( suppressDuplicateOverlappingText )
         {
@@ -1039,15 +1287,15 @@ public class PDFTextStripper extends PDFStreamEngine
                  * one TextPosition to find what we are overlapping.  
                  * This may not always be true. */
                 TextPosition previousTextPosition = (TextPosition)textList.get(textList.size()-1);
-                if(text.isDiacritic() && previousTextPosition.contains(text))
+                if(!isEnableLogger && text.isDiacritic() && previousTextPosition.contains(text)) // Eugene Su mark for testing
                 {
-                    previousTextPosition.mergeDiacritic(text, normalize);
+                	previousTextPosition.mergeDiacritic(text, normalize);
                 }
                 /* If the previous TextPosition was the diacritic, merge it into this
                  * one and remove it from the list. */
-                else if(previousTextPosition.isDiacritic() && text.contains(previousTextPosition))
+                else if(!isEnableLogger && previousTextPosition.isDiacritic() && text.contains(previousTextPosition))  // Eugene Su mark for testing
                 {
-                    text.mergeDiacritic(previousTextPosition, normalize);
+                	text.mergeDiacritic(previousTextPosition, normalize);
                     textList.remove(textList.size()-1);
                     textList.add(text);
                 }
@@ -1317,6 +1565,17 @@ public class PDFTextStripper extends PDFStreamEngine
     }
 
     /**
+     * This will tell if the text stripper should sort the text tokens
+     * before writing to the stream.
+     *
+     * @return true If the text tokens will be sorted before being written.
+     */
+    public boolean getSortByPositionV2()
+    {
+        return sortByPositionV2; // Eugene Su
+    }
+    
+    /**
      * The order of the text tokens in a PDF file may not be in the same
      * as they appear visually on the screen.  For example, a PDF writer may
      * write out all text by font, so all bold or larger text, then make a second
@@ -1332,6 +1591,24 @@ public class PDFTextStripper extends PDFStreamEngine
     public void setSortByPosition(boolean newSortByPosition)
     {
         sortByPosition = newSortByPosition;
+    }
+    
+    /**
+     * The order of the text tokens in a PDF file may not be in the same
+     * as they appear visually on the screen.  For example, a PDF writer may
+     * write out all text by font, so all bold or larger text, then make a second
+     * pass and write out the normal text.<br/>
+     * The default is to <b>not</b> sort by position.<br/>
+     * <br/>
+     * A PDF writer could choose to write each character in a different order.  By
+     * default PDFBox does <b>not</b> sort the text tokens before processing them due to
+     * performance reasons.
+     *
+     * @param newSortByPosition Tell PDFBox to sort the text positions.
+     */
+    public void setSortByPositionV2(boolean newSortByPosition)
+    {
+        sortByPositionV2 = newSortByPosition; // Eugene Su
     }
 
     /**
@@ -1822,7 +2099,7 @@ public class PDFTextStripper extends PDFStreamEngine
      */
     protected void setListItemPatterns(List<Pattern> patterns)
     {
-    	listOfPatterns = patterns;
+            listOfPatterns = patterns;
     }
 
     /**
@@ -1925,27 +2202,27 @@ public class PDFTextStripper extends PDFStreamEngine
             {
                 lineBuilder = normalizeAdd(normalized, lineBuilder, wordPositions, line.get(i));
             }
-        }
-        else
-        {
+                }
+                else 
+                {
             for(TextPosition text : line)
             {
                 lineBuilder = normalizeAdd(normalized, lineBuilder, wordPositions, text);
+                }
             }
-        }
-        if (lineBuilder.length() > 0) 
-        {
+            if (lineBuilder.length() > 0) 
+            {
             normalized.add(createWord(lineBuilder.toString(), wordPositions));
-        }
+            }
         return normalized;
-    }
+        }
 
     /**
      * Used within {@link #normalize(List, boolean, boolean)} to create a single {@link WordWithTextPositions}
      * entry.
      */
     private WordWithTextPositions createWord(String word, List<TextPosition> wordPositions)
-    {
+        {
         return new WordWithTextPositions(normalize.normalizePres(word), wordPositions);
     }
 
@@ -1955,18 +2232,18 @@ public class PDFTextStripper extends PDFStreamEngine
      */
     private StringBuilder normalizeAdd(LinkedList<WordWithTextPositions> normalized,
             StringBuilder lineBuilder, List<TextPosition> wordPositions, TextPosition text)
-    {
-        if (text instanceof WordSeparator) 
-        {
+            {
+                if (text instanceof WordSeparator) 
+                {
             normalized.add(createWord(lineBuilder.toString(), new ArrayList<TextPosition>(wordPositions)));
-            lineBuilder = new StringBuilder();
+                    lineBuilder = new StringBuilder();
             wordPositions.clear();
-        }
-        else 
-        {
-            lineBuilder.append(text.getCharacter());
+                }
+                else 
+                {
+                    lineBuilder.append(text.getCharacter());
             wordPositions.add(text);
-        }
+                }
         return lineBuilder;
     }
 
@@ -1995,7 +2272,7 @@ public class PDFTextStripper extends PDFStreamEngine
      * Note that the number of entries in that list may differ from the number of characters in the
      * string due to normalization.
      *
-     * @author Axel Dörfler
+     * @author Axel Dï¿½rfler
      */
     private static final class WordWithTextPositions
     {
@@ -2007,11 +2284,11 @@ public class PDFTextStripper extends PDFStreamEngine
             text = word;
             textPositions = positions;
         }
-        
+
         public String getText()
         {
             return text;
-        }
+    }
 
         public List<TextPosition> getTextPositions()
         {

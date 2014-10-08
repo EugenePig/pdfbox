@@ -30,7 +30,7 @@ public class CMAPTable extends TTFTable
      * A tag used to identify this table.
      */
     public static final String TAG = "cmap";
- 
+    
     /**
      * A constant for the platform.
      */
@@ -46,6 +46,12 @@ public class CMAPTable extends TTFTable
      */
     public static final int PLATFORM_WINDOWS = 3;
     
+    //Eugene Su
+    /**
+     * An encoding constant.
+     */
+    public static final int ENCODING_MACINTOSH = 0;
+
     /**
      * An encoding constant.
      */
@@ -93,7 +99,7 @@ public class CMAPTable extends TTFTable
         {
             CMAPEncodingEntry cmap = new CMAPEncodingEntry();
             cmap.initData(data);
-            cmaps[i] = cmap;
+            cmaps[i]=cmap;
         }
         for( int i=0; i< numberOfTables; i++ )
         {

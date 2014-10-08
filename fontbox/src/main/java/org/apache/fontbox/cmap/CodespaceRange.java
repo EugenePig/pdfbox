@@ -16,16 +16,19 @@
  */
 package org.apache.fontbox.cmap;
 
+import java.io.Serializable; // Eugene Su
+
 /**
  * This represents a single entry in the codespace range.
  *
  * @author Ben Litchfield (ben@benlitchfield.com)
  * @version $Revision: 1.1 $
  */
-public class CodespaceRange
+public class CodespaceRange implements Serializable
 {
 
-    private byte[] start;
+	private static final long serialVersionUID = 1L; // Eugene Su
+	private byte[] start;
     private byte[] end;
 
     /**

@@ -780,8 +780,12 @@ public final class COSName extends COSBase implements Comparable<COSName>
     */
     public static final COSName IDENTITY_H = new COSName( "Identity-H" );
     /**
-     * A common COSName value.
-     */
+    * A common COSName value. // Eugene Su
+    */
+    public static final COSName IDENTITY_V = new COSName( "Identity-V" );
+    /**
+    * A common COSName value.
+    */
     public static final COSName IM = new COSName( "IM" );
     /**
     * A common COSName value.

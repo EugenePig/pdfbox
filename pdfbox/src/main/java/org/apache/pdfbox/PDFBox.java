@@ -57,6 +57,11 @@ public class PDFBox
                 {
                     ExtractText.main(arguments);
                 } 
+                else if (command.equals("ExtractTextInfo")) 
+                {   // Eugene Su
+                    ExtractTextInfo.main(arguments); 
+                    exitAfterCallingMain = false;
+                }
                 else if (command.equals("ExtractImages")) 
                 {
                     ExtractImages.main(arguments);
@@ -135,6 +140,7 @@ public class PDFBox
         System.err.println("  Decrypt");
         System.err.println("  Encrypt"); 
         System.err.println("  ExtractText"); 
+        System.err.println("  ExtractTextInfo"); 
         System.err.println("  ExtractImages"); 
         System.err.println("  Overlay");
         System.err.println("  OverlayPDF"); 
