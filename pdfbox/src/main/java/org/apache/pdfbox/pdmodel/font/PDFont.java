@@ -964,4 +964,13 @@ public abstract class PDFont implements COSObjectable
     {
     }
 
+    /**
+     * Returns the cmap of the type0 font if it exists
+     * 
+     * @return the CMap
+     */
+    public CMap getCMap()
+    {
+        return 	cmap;        	
+    }
 }

@@ -450,8 +450,23 @@ public class PDFStreamEngine
             
             // TODO : tx should be set for horizontal text and ty for vertical text
             // which seems to be specified in the font (not the direction in the matrix).
-            float tx = ((characterHorizontalDisplacementText)*fontSizeText)*horizontalScalingText;
-            float ty = 0;
+            float tx;
+            float ty;
+            int wmode = 0;
+            if( font.getCMap() != null && font.getCMap().getWMode() == 1 )
+            {
+            	wmode = 1;
+            }
+            if( wmode == 1 )
+            {
+                ty = 0 - ((characterHorizontalDisplacementText)*fontSizeText)*horizontalScalingText;
+                tx = 0;
+            }
+            else
+            {
+                tx = ((characterHorizontalDisplacementText)*fontSizeText)*horizontalScalingText;
+                ty = 0;
+            }
             // reset the matrix instead of creating a new one
             td.reset();
             td.setValue( 2, 0, tx );
@@ -468,15 +483,33 @@ public class PDFStreamEngine
             final float endYPosition = textMatrixEnd.getYPosition();
 
             // add some spacing to the text matrix (see comment above)
-            tx = ((characterHorizontalDisplacementText)*fontSizeText+characterSpacingText+spacingText)
+            if( wmode == 1 )
+            {
+                ty = 0 - ((characterHorizontalDisplacementText)*fontSizeText-characterSpacingText-spacingText)
+                        *horizontalScalingText;
+                td.setValue( 2, 1, ty );
+            }
+            else
+            {
+                tx = ((characterHorizontalDisplacementText)*fontSizeText+characterSpacingText+spacingText)
                     *horizontalScalingText;
-            td.setValue( 2, 0, tx );
+                td.setValue( 2, 0, tx );
+            }
             td.multiply(textMatrix, textMatrix );
             
             // determine the width of this character
             // XXX: Note that if we handled vertical text, we should be using Y here
-            float startXPosition = textMatrixStart.getXPosition();
-            float widthText = endXPosition - startXPosition;
+            float widthText;
+            if( wmode == 1 )
+            {
+            	float startYPosition = textMatrixStart.getYPosition();
+                widthText = startYPosition - endYPosition;
+            }
+            else
+            {
+                float startXPosition = textMatrixStart.getXPosition();
+                widthText = endXPosition - startXPosition;
+            }
 
             //there are several cases where one character code will
             //output multiple characters.  For example "fi" or a
